@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ZaloNext - Đổi Avatar & Chọn giới tính</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        zalo: '#0068FF',
+                        zaloHover: '#0056d6',
+                        zaloBg: '#F4F5F7'
+                    },
+                    height: {
+                        'screen-app': '100dvh'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #ffffff;
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+        .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+    </style>
+</head>
+<body class="w-full h-screen-app overflow-hidden flex flex-col m-0 p-0 text-gray-900 bg-zaloBg pt-safe">
+
+    <!-- MAIN CONTAINER -->
+    <main id="app-container" class="flex-1 w-full h-full relative flex flex-col overflow-hidden bg-white">
+        <!-- Render nội dung bằng JS -->
+    </main>
+
+    <!-- BOTTOM TAB BAR -->
+    <nav id="bottom-bar" class="w-full bg-white border-t border-gray-200 flex justify-around pb-safe z-40 shrink-0 hidden">
+        <button onclick="switchTab('messages')" id="tab-messages" class="flex-1 flex flex-col items-center py-2 text-zalo transition-colors relative">
+            <div class="relative">
+                <i data-lucide="message-circle" class="w-6 h-6"></i>
+                <span id="badge-messages" class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full hidden">0</span>
+            </div>
+            <span class="text-[11px] mt-1 font-medium">Tin nhắn</span>
+        </button>
+        
+        <button onclick="switchTab('contacts')" id="tab-contacts" class="flex-1 flex flex-col items-center py-2 text-gray-400 transition-colors">
+            <i data-lucide="book-user" class="w-6 h-6"></i>
+            <span class="text-[11px] mt-1 font-medium">Danh bạ</span>
+        </button>
+
+        <button onclick="switchTab('feed')" id="tab-feed" class="flex-1 flex flex-col items-center py-2 text-gray-400 transition-colors">
+            <i data-lucide="compass" class="w-6 h-6"></i>
+            <span class="text-[11px] mt-1 font-medium">Bảng tin</span>
+        </button>
+
+        <button onclick="switchTab('profile')" id="tab-profile" class="flex-1 flex flex-col items-center py-2 text-gray-400 transition-colors">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[11px] mt-1 font-medium">Cá nhân</span>
+        </button>
+    </nav>
+
+    <!-- TOAST -->
+    <div id="toast" class="fixed top-12 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white px-5 py-2.5 rounded-full text-xs font-medium shadow-xl z-[100] transform -translate-y-16 opacity-0 transition-all duration-300 pointer-events-none flex items-center space-x-2">
+        <i data-lucide="info" class="w-4 h-4 text-blue-400"></i>
+        <span id="toast-msg">Thông báo</span>
+    </div>
+
+    <!-- MODAL: KẾT BẠN -->
+    <div id="add-friend-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+        <div class="bg-white w-full rounded-t-3xl p-5 pb-8 space-y-4 transform translate-y-full transition-transform duration-300" id="add-friend-sheet">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-gray-900 text-lg">Thêm bạn bè qua ID</h3>
+                <button onclick="toggleAddFriendModal(false)" class="bg-gray-100 p-1.5 rounded-full text-gray-500">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div>
+                <label class="text-sm font-medium text-gray-600 block mb-2">Nhập ZaloNext ID (VD: 00001, 00002...)</label>
+                <div class="flex space-x-2">
+                    <input type="number" id="search-friend-input" placeholder="Nhập 5 chữ số ID" class="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zalo outline-none">
+                    <button onclick="searchUser()" class="bg-zalo text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md">Tìm</button>
+                </div>
+            </div>
+            <div id="search-result-area" class="min-h-[120px] flex items-center justify-center bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300">
+                <p class="text-sm text-gray-400 text-center">Hãy nhập ID để kết nối với người dùng khác</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHỈNH SỬA HỒ SƠ -->
+    <div id="edit-profile-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
+        <div class="bg-white w-full rounded-t-3xl p-5 pb-8 space-y-4 transform translate-y-full transition-transform duration-300 max-h-[90vh] overflow-y-auto hide-scrollbar" id="edit-profile-sheet">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-3">
+                <h3 class="font-bold text-gray-900 text-lg">Chỉnh sửa hồ sơ</h3>
+                <button onclick="toggleEditModal(false)" class="bg-gray-100 p-1.5 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+
+            <!-- PHẦN ĐỔI AVATAR -->
+            <div class="flex flex-col items-center py-2">
+                <div class="relative mb-3">
+                    <img id="edit-preview-avatar" src="" class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-md bg-gray-200">
+                </div>
+                <div class="flex space-x-2">
+                    <button type="button" onclick="setDefaultAvatar()" class="bg-gray-100 text-gray-700 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1">
+                        <i data-lucide="user-round" class="w-4 h-4"></i>
+                        <span>Ảnh mặc định</span>
+                    </button>
+                    <label class="bg-blue-50 text-zalo font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1 cursor-pointer">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span>Chọn từ Album</span>
+                        <input type="file" id="upload-avatar-file" accept="image/*" class="hidden" onchange="previewFileAvatar(event)">
+                    </label>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Tên hiển thị</label>
+                    <input type="text" id="edit-name-input" class="w-full bg-gray-100 border-none rounded-xl px-4 py-3 text-sm mt-1 outline-none">
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Giới tính</label>
+                    <select id="edit-gender-input" class="w-full bg-gray-100 border-none rounded-xl px-4 py-3 text-sm mt-1 outline-none font-medium">
+                        <option value="Nam">Nam</option>
+                        <option value="Nữ">Nữ</option>
+                        <option value="Khác">Khác</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm font-medium text-gray-600">Tiểu sử (Bio)</label>
+                    <textarea id="edit-bio-input" maxlength="80" rows="2" class="w-full bg-gray-100 border-none rounded-xl px-4 py-3 text-sm mt-1 outline-none resize-none"></textarea>
+                </div>
+            </div>
+            <button onclick="saveProfile()" class="w-full bg-zalo text-white py-3.5 rounded-xl font-bold text-base shadow-md active:scale-95 transition">Lưu thay đổi</button>
+        </div>
+    </div>
+
+    <script>
+        // Avatar mặc định kiểu chuẩn tối giản TikTok (Nền xám nhạt, người trắng)
+        const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23E5E7EB'/%3E%3Ccircle cx='50' cy='38' r='20' fill='%23FFFFFF'/%3E%3Cpath d='M15 88 C15 65 30 58 50 58 C70 58 85 65 85 88 Z' fill='%23FFFFFF'/%3E%3C/svg%3E";
+
+        let globalUsers = JSON.parse(localStorage.getItem('zn_users')) || [
+            { id: "00001", name: "ZaloNext Bot Hướng Dẫn", avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80", gender: "Khác", bio: "Chào mừng bạn đến với ZaloNext! 🤖", online: true }
+        ];
+
+        let currentUser = JSON.parse(localStorage.getItem('zn_current_user')) || null;
+        let chats = JSON.parse(localStorage.getItem('zn_chats')) || [];
+        let posts = JSON.parse(localStorage.getItem('zn_posts')) || [
+            { id: "p1", userId: "00001", content: "Chào mừng các thành viên mới gia nhập cộng đồng ZaloNext! Hãy thử kết bạn bằng ID 5 số nhé ✨", type: "text", likes: 12, liked: false, comments: 2, time: "Vừa xong" }
+        ];
+
+        let tempAvatarData = ""; 
+        let registeringGender = "Nam"; // Mặc định giới tính khi tạo mới
+
+        function saveData() {
+            localStorage.setItem('zn_users', JSON.stringify(globalUsers));
+            localStorage.setItem('zn_current_user', JSON.stringify(currentUser));
+            localStorage.setItem('zn_chats', JSON.stringify(chats));
+            localStorage.setItem('zn_posts', JSON.stringify(posts));
+        }
+
+        function formatId(num) { return String(num).padStart(5, '0'); }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('-translate-y-16', 'opacity-0');
+            t.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => { t.classList.remove('translate-y-0', 'opacity-100'); t.classList.add('-translate-y-16', 'opacity-0'); }, 2000);
+        }
+
+        window.onload = () => {
+            if (!currentUser) {
+                renderWelcomeScreen();
+            } else {
+                switchTab('messages');
+            }
+        };
+
+        function renderWelcomeScreen() {
+            document.getElementById('bottom-bar').classList.add('hidden');
+            const c = document.getElementById('app-container');
+            c.innerHTML = `
+                <div class="flex-1 flex flex-col justify-between p-6 bg-gradient-to-b from-blue-600 to-zalo text-white text-center">
+                    <div class="pt-10">
+                        <div class="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl mb-4">
+                            <i data-lucide="zap" class="w-10 h-10 text-zalo fill-zalo"></i>
+                        </div>
+                        <h1 class="text-3xl font-black tracking-wide">ZaloNext</h1>
+                        <p class="text-blue-100 text-sm mt-1">Mạng xã hội thế hệ mới siêu mượt</p>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 text-left space-y-3 shadow-inner">
+                        <div class="flex items-start space-x-3">
+                            <div class="bg-white/20 p-2 rounded-xl mt-0.5"><i data-lucide="hash" class="w-5 h-5"></i></div>
+                            <div><h4 class="font-bold text-sm">Hệ thống ID tự động</h4><p class="text-xs text-blue-100">Mỗi tài khoản có một ID 5 số độc nhất (00001, 00002...)</p></div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <div class="bg-white/20 p-2 rounded-xl mt-0.5"><i data-lucide="users" class="w-5 h-5"></i></div>
+                            <div><h4 class="font-bold text-sm">Danh bạ cá nhân</h4><p class="text-xs text-blue-100">Tự do tìm kiếm và kết nối bạn bè bằng mã ID riêng.</p></div>
+                        </div>
+                    </div>
+
+                    <button onclick="renderRegisterScreen()" class="w-full bg-white text-zalo font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition text-base">
+                        Tạo tài khoản ngay 🚀
+                    </button>
+                </div>
+            `;
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+
+        function renderRegisterScreen() {
+            registeringGender = "Nam";
+            const c = document.getElementById('app-container');
+            c.innerHTML = `
+                <div class="flex-1 flex flex-col justify-between p-6 bg-white overflow-y-auto hide-scrollbar">
+                    <div class="pt-2">
+                        <button onclick="renderWelcomeScreen()" class="p-2 bg-gray-100 rounded-full mb-4"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-700"></i></button>
+                        <h2 class="text-2xl font-black text-gray-900">Tạo tài khoản mới</h2>
+                        <p class="text-sm text-gray-500 mt-1">Hệ thống sẽ cấp ID và avatar mặc định cho bạn.</p>
+                    </div>
+                    <div class="space-y-4 my-auto py-4">
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">Tên hiển thị của bạn</label>
+                            <input type="text" id="reg-name" placeholder="VD: Hoàng Anh, Linh Đan..." class="w-full bg-gray-100 border-none rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-zalo">
+                        </div>
+                        <div>
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">Chọn giới tính</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <button type="button" onclick="selectRegGender('Nam')" id="btn-gender-Nam" class="py-3 rounded-2xl border-2 border-zalo bg-blue-50 text-zalo font-bold text-sm transition">Nam</button>
+                                <button type="button" onclick="selectRegGender('Nữ')" id="btn-gender-Nữ" class="py-3 rounded-2xl border-2 border-transparent bg-gray-100 text-gray-600 font-semibold text-sm transition">Nữ</button>
+                                <button type="button" onclick="selectRegGender('Khác')" id="btn-gender-Khác" class="py-3 rounded-2xl border-2 border-transparent bg-gray-100 text-gray-600 font-semibold text-sm transition">Khác</button>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="registerNewUser()" class="w-full bg-zalo text-white py-4 rounded-2xl font-bold text-base shadow-md active:scale-95 transition shrink-0">
+                        Hoàn tất & Khám phá App ✨
+                    </button>
+                </div>
+            `;
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+
+        function selectRegGender(g) {
+            registeringGender = g;
+            ['Nam', 'Nữ', 'Khác'].forEach(item => {
+                let btn = document.getElementById(`btn-gender-${item}`);
+                if (item === g) {
+                    btn.className = "py-3 rounded-2xl border-2 border-zalo bg-blue-50 text-zalo font-bold text-sm transition";
+                } else {
+                    btn.className = "py-3 rounded-2xl border-2 border-transparent bg-gray-100 text-gray-600 font-semibold text-sm transition";
+                }
+            });
+        }
+
+        function registerNewUser() {
+            let nameInput = document.getElementById('reg-name').value.trim();
+            if(!nameInput) { showToast('Vui lòng nhập tên của bạn!'); return; }
+
+            let nextIdNum = globalUsers.length + 1;
+            let newId = formatId(nextIdNum);
+
+            currentUser = {
+                id: newId,
+                name: nameInput,
+                gender: registeringGender,
+                avatar: DEFAULT_AVATAR, // Sử dụng chuẩn avatar mẫu TikTok
+                bio: `Xin chào! Tôi là ${nameInput} #${newId}`,
+                online: true
+            };
+
+            globalUsers.push(currentUser);
+
+            chats.push({
+                userId: "00001",
+                unread: 1,
+                messages: [
+                    { sender: "00001", text: `Chào ${nameInput}! Bạn đã đăng ký thành công tài khoản (Giới tính: ${registeringGender}) với ID: #${newId}. 🎉`, time: "Vừa xong" }
+                ]
+            });
+
+            saveData();
+            showToast(`Đăng ký thành công! ID: #${newId}`);
+            switchTab('messages');
+        }
+
+        function switchTab(tab) {
+            document.getElementById('bottom-bar').classList.remove('hidden');
+
+            ['messages', 'contacts', 'feed', 'profile'].forEach(t => {
+                const btn = document.getElementById(`tab-${t}`);
+                if (btn) btn.className = t === tab 
+                    ? "flex-1 flex flex-col items-center py-2 text-zalo font-bold transition-colors relative" 
+                    : "flex-1 flex flex-col items-center py-2 text-gray-400 font-medium transition-colors relative";
+            });
+
+            const content = document.getElementById('app-container');
+            if (tab === 'messages') renderMessages(content);
+            if (tab === 'contacts') renderContacts(content);
+            if (tab === 'feed') renderFeed(content);
+            if (tab === 'profile') renderProfile(content);
+            setTimeout(() => lucide.createIcons(), 10);
+        }
+
+        function renderMessages(container) {
+            container.innerHTML = `
+                <div class="bg-zalo text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
+                    <h2 class="font-bold text-lg">Tin nhắn</h2>
+                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full active:bg-white/20"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto hide-scrollbar bg-white divide-y divide-gray-100">
+                    ${chats.length === 0 ? `
+                        <div class="flex flex-col items-center justify-center h-full p-6 text-center text-gray-400">
+                            <i data-lucide="message-square-off" class="w-12 h-12 mb-2 stroke-1"></i>
+                            <p class="text-sm">Chưa có cuộc trò chuyện nào.<br>Hãy bấm vào dấu cộng ở góc phải để thêm bạn bằng ID nhé!</p>
+                        </div>
+                    ` : chats.map(c => {
+                        let u = globalUsers.find(x => x.id === c.userId) || { name: "Người dùng", avatar: DEFAULT_AVATAR, online: false };
+                        let msg = c.messages[c.messages.length-1] || { text: "", time: "" };
+                        return `
+                        <div onclick="openChat('${u.id}')" class="flex items-center p-4 active:bg-gray-100 transition cursor-pointer">
+                            <div class="relative mr-4 shrink-0">
+                                <img src="${u.avatar || DEFAULT_AVATAR}" class="w-14 h-14 rounded-full object-cover bg-gray-200">
+                                ${u.online ? `<span class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></span>` : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="text-base font-bold text-gray-900 truncate">${u.name}</h4>
+                                    <span class="text-xs text-gray-400 shrink-0">${msg.time}</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <p class="text-sm ${c.unread > 0 ? 'font-semibold text-gray-900' : 'text-gray-500'} truncate mr-2">${msg.text}</p>
+                                    ${c.unread > 0 ? `<span class="bg-zalo text-white text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0">${c.unread}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>`
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function openChat(userId) {
+            let u = globalUsers.find(x => x.id === userId);
+            let chatObj = chats.find(c => c.userId === userId);
+            if (chatObj) chatObj.unread = 0;
+            saveData();
+
+            document.getElementById('bottom-bar').classList.add('hidden');
+            const container = document.getElementById('app-container');
+            container.innerHTML = `
+                <div class="bg-zalo text-white px-2 py-3 flex items-center shadow-md shrink-0">
+                    <button onclick="switchTab('messages')" class="p-2 active:bg-white/20 rounded-full"><i data-lucide="chevron-left" class="w-7 h-7"></i></button>
+                    <img src="${u.avatar || DEFAULT_AVATAR}" class="w-10 h-10 rounded-full object-cover border border-white/30 ml-1 bg-gray-200">
+                    <div class="ml-3">
+                        <h4 class="text-base font-bold leading-none">${u.name}</h4>
+                        <span class="text-xs text-white/80 block mt-1">ID: ${u.id}</span>
+                    </div>
+                </div>
+                <div id="chat-body" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 bg-[#E2E8F0]">
+                    ${chatObj.messages.map(m => `
+                        <div class="flex ${m.sender === currentUser.id ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[75%] px-4 py-2.5 text-sm shadow-sm ${m.sender === currentUser.id ? 'bg-zalo text-white rounded-2xl rounded-tr-sm' : 'bg-white text-gray-900 rounded-2xl rounded-tl-sm'}">
+                                <p class="leading-relaxed">${m.text}</p>
+                                <span class="block text-[10px] mt-1 ${m.sender === currentUser.id ? 'text-white/70 text-right' : 'text-gray-400'}">${m.time}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="bg-white p-3 flex items-center space-x-3 shrink-0 pb-safe">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-zalo">
+                    <button onclick="sendMsg('${userId}')" class="bg-zalo text-white p-2.5 rounded-full active:scale-90"><i data-lucide="send" class="w-5 h-5"></i></button>
+                </div>
+            `;
+            setTimeout(() => { 
+                lucide.createIcons();
+                let b = document.getElementById('chat-body'); b.scrollTop = b.scrollHeight;
+            }, 10);
+        }
+
+        function sendMsg(userId) {
+            let inp = document.getElementById('chat-input');
+            if(!inp.value.trim()) return;
+            let chat = chats.find(c => c.userId === userId);
+            chat.messages.push({ sender: currentUser.id, text: inp.value.trim(), time: "Vừa xong" });
+            saveData();
+            openChat(userId);
+        }
+
+        function renderContacts(container) {
+            let otherUsers = globalUsers.filter(u => u.id !== currentUser.id);
+            container.innerHTML = `
+                <div class="bg-zalo text-white px-4 py-3 flex items-center justify-between shrink-0">
+                    <h2 class="font-bold text-lg">Danh bạ</h2>
+                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full active:bg-white/20"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto hide-scrollbar bg-white divide-y divide-gray-100">
+                    ${otherUsers.length === 0 ? `
+                        <div class="p-8 text-center text-gray-400">
+                            <p class="text-sm">Danh bạ của bạn đang trống.<br>Bấm nút góc trên để tìm kết bạn theo ID!</p>
+                        </div>
+                    ` : otherUsers.map(u => `
+                        <div class="flex items-center px-4 py-3 active:bg-gray-50">
+                            <img src="${u.avatar || DEFAULT_AVATAR}" class="w-12 h-12 rounded-full object-cover mr-4 bg-gray-200">
+                            <div class="flex-1">
+                                <h4 class="text-base font-bold text-gray-900">${u.name}</h4>
+                                <p class="text-xs text-gray-400">ID: ${u.id} ${u.gender ? '• ' + u.gender : ''}</p>
+                            </div>
+                            <button onclick="startChatWith('${u.id}')" class="p-2 text-zalo bg-blue-50 rounded-full"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function startChatWith(userId) {
+            let existing = chats.find(c => c.userId === userId);
+            if (!existing) {
+                chats.push({ userId: userId, unread: 0, messages: [{ sender: userId, text: "Xin chào! Chúng ta đã kết nối trên ZaloNext.", time: "Vừa xong" }] });
+                saveData();
+            }
+            openChat(userId);
+        }
+
+        function renderFeed(container) {
+            container.innerHTML = `
+                <div class="bg-zalo text-white px-4 py-3 flex justify-between shrink-0">
+                    <h2 class="font-bold text-lg">Bảng tin</h2>
+                    <button onclick="showToast('Chức năng đăng bài')" class="p-1"><i data-lucide="camera" class="w-6 h-6"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto hide-scrollbar bg-gray-100 space-y-2">
+                    ${posts.map(p => {
+                        let u = globalUsers.find(x => x.id === p.userId) || currentUser;
+                        return `
+                        <div class="bg-white pt-3">
+                            <div class="flex items-center px-4 pb-2">
+                                <img src="${u.avatar || DEFAULT_AVATAR}" class="w-10 h-10 rounded-full mr-3 object-cover bg-gray-200">
+                                <div><h4 class="text-sm font-bold">${u.name}</h4><span class="text-[11px] text-gray-400">${p.time}</span></div>
+                            </div>
+                            <p class="px-4 pb-3 text-sm text-gray-800">${p.content}</p>
+                            <div class="flex px-4 py-3 border-t space-x-6 text-sm text-gray-500">
+                                <button class="flex items-center space-x-1"><i data-lucide="heart" class="w-5 h-5"></i><span>${p.likes}</span></button>
+                                <button class="flex items-center space-x-1"><i data-lucide="message-circle" class="w-5 h-5"></i><span>${p.comments}</span></button>
+                            </div>
+                        </div>`
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderProfile(container) {
+            container.innerHTML = `
+                <div class="bg-zalo text-white px-4 py-3 flex justify-between shrink-0">
+                    <h2 class="font-bold text-lg">Cá nhân</h2>
+                </div>
+                <div class="flex-1 overflow-y-auto hide-scrollbar bg-zaloBg pb-6">
+                    <div class="bg-white p-6 text-center shadow-sm">
+                        <img src="${currentUser.avatar || DEFAULT_AVATAR}" class="w-24 h-24 rounded-full object-cover border-4 border-gray-100 mx-auto mb-3 bg-gray-200">
+                        <h3 class="text-xl font-bold text-gray-900">${currentUser.name}</h3>
+                        <p class="text-sm font-semibold text-zalo mt-1">ID: ${currentUser.id} <span class="text-gray-400 font-normal">• ${currentUser.gender || 'Chưa cập nhật'}</span></p>
+                        <p class="text-sm text-gray-500 mt-2">${currentUser.bio}</p>
+                        <button onclick="toggleEditModal(true)" class="mt-4 bg-gray-100 text-gray-800 font-bold px-6 py-2 rounded-full text-sm">Chỉnh sửa hồ sơ</button>
+                    </div>
+                    <div class="bg-white mt-4 p-4">
+                        <button onclick="logout()" class="w-full bg-red-50 text-red-600 py-3 rounded-xl font-bold text-sm">Đăng xuất tài khoản</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function logout() {
+            localStorage.removeItem('zn_current_user');
+            currentUser = null;
+            location.reload();
+        }
+
+        function toggleAddFriendModal(show) {
+            const m = document.getElementById('add-friend-modal');
+            const s = document.getElementById('add-friend-sheet');
+            if(show) {
+                m.classList.remove('hidden');
+                setTimeout(() => { m.classList.remove('opacity-0'); s.classList.remove('translate-y-full'); }, 10);
+            } else {
+                s.classList.add('translate-y-full'); m.classList.add('opacity-0');
+                setTimeout(() => m.classList.add('hidden'), 300);
+            }
+        }
+
+        function searchUser() {
+            let v = document.getElementById('search-friend-input').value.trim();
+            if(!v) return;
+            v = /^\d+$/.test(v) ? formatId(v) : v;
+            let f = globalUsers.find(u => u.id === v);
+            let r = document.getElementById('search-result-area');
+            if(f && f.id !== currentUser.id) {
+                r.innerHTML = `
+                    <div class="flex items-center w-full bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                        <img src="${f.avatar || DEFAULT_AVATAR}" class="w-12 h-12 rounded-full mr-3 object-cover bg-gray-200">
+                        <div class="flex-1 text-left"><h4 class="font-bold text-sm text-gray-900">${f.name}</h4><p class="text-xs text-zalo font-bold">ID: ${f.id}</p></div>
+                        <button onclick="toggleAddFriendModal(false); startChatWith('${f.id}');" class="bg-zalo text-white px-3 py-1.5 rounded-lg text-xs font-bold">Nhắn tin</button>
+                    </div>`;
+            } else {
+                r.innerHTML = `<p class="text-red-500 font-bold text-sm">Không tìm thấy hoặc đây là ID của chính bạn!</p>`;
+            }
+        }
+
+        function toggleEditModal(show) {
+            const m = document.getElementById('edit-profile-modal');
+            const s = document.getElementById('edit-profile-sheet');
+            if(show) {
+                tempAvatarData = currentUser.avatar || DEFAULT_AVATAR;
+                document.getElementById('edit-preview-avatar').src = tempAvatarData;
+                document.getElementById('edit-name-input').value = currentUser.name;
+                document.getElementById('edit-gender-input').value = currentUser.gender || 'Nam';
+                document.getElementById('edit-bio-input').value = currentUser.bio;
+                m.classList.remove('hidden');
+                setTimeout(() => { m.classList.remove('opacity-0'); s.classList.remove('translate-y-full'); }, 10);
+            } else {
+                s.classList.add('translate-y-full'); m.classList.add('opacity-0');
+                setTimeout(() => m.classList.add('hidden'), 300);
+            }
+        }
+
+        function setDefaultAvatar() {
+            tempAvatarData = DEFAULT_AVATAR;
+            document.getElementById('edit-preview-avatar').src = DEFAULT_AVATAR;
+            showToast('Đã chọn ảnh mặc định kiểu TikTok');
+        }
+
+        function previewFileAvatar(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempAvatarData = e.target.result;
+                    document.getElementById('edit-preview-avatar').src = tempAvatarData;
+                    showToast('Đã tải ảnh từ album thành công');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function saveProfile() {
+            currentUser.name = document.getElementById('edit-name-input').value || currentUser.name;
+            currentUser.gender = document.getElementById('edit-gender-input').value;
+            currentUser.bio = document.getElementById('edit-bio-input').value;
+            currentUser.avatar = tempAvatarData;
+
+            let idx = globalUsers.findIndex(u => u.id === currentUser.id);
+            if(idx !== -1) globalUsers[idx] = currentUser;
+            
+            saveData();
+            toggleEditModal(false);
+            showToast('Cập nhật hồ sơ thành công!');
+            switchTab('profile');
+        }
+    </script>
+</body>
+</html>
