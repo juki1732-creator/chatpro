@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ZaloNext - Online Cloud Version</title>
+    <title>ZaloNext Pro - Cloud & MiniGame</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons -->
@@ -36,20 +36,22 @@
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
         .pt-safe { padding-top: env(safe-area-inset-top, 0px); }
+        @keyframes floatUp {
+            0% { transform: translateY(0px) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-150px) scale(1.2); opacity: 0; }
+        }
+        .floating-heart {
+            position: absolute;
+            animation: floatUp 1.5s ease-out forwards;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body class="w-full h-screen-app overflow-hidden flex flex-col m-0 p-0 text-gray-900 bg-zaloBg pt-safe">
 
     <!-- MAIN CONTAINER -->
     <main id="app-container" class="flex-1 w-full h-full relative flex flex-col overflow-hidden bg-white">
-        <!-- Màn hình chờ kết nối Cloud -->
-        <div class="flex-1 flex flex-col items-center justify-center p-6 bg-white text-center">
-            <div class="w-16 h-16 bg-blue-50 text-zalo rounded-full flex items-center justify-center animate-spin mb-4">
-                <i data-lucide="loader-2" class="w-8 h-8"></i>
-            </div>
-            <h3 class="font-bold text-lg text-gray-800">Đang kết nối hệ thống Cloud...</h3>
-            <p class="text-xs text-gray-400 mt-1">Vui lòng chờ trong giây lát để đồng bộ dữ liệu trực tuyến.</p>
-        </div>
+        <!-- Nội dung sẽ render tự động -->
     </main>
 
     <!-- BOTTOM TAB BAR -->
@@ -78,22 +80,22 @@
         <span id="toast-msg">Thông báo</span>
     </div>
 
-    <!-- MODAL: KẾT BẠN -->
+    <!-- MODAL: TÌM BẠN (HỖ TRỢ ID & TÊN) -->
     <div id="add-friend-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end transition-opacity duration-300 opacity-0">
         <div class="bg-white w-full rounded-t-3xl p-5 pb-8 space-y-4 transform translate-y-full transition-transform duration-300" id="add-friend-sheet">
             <div class="flex justify-between items-center border-b border-gray-100 pb-3">
-                <h3 class="font-bold text-gray-900 text-lg">Thêm bạn bè qua ID</h3>
+                <h3 class="font-bold text-gray-900 text-lg">Tìm bạn bè (Theo ID hoặc Tên)</h3>
                 <button onclick="toggleAddFriendModal(false)" class="bg-gray-100 p-1.5 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
             </div>
             <div>
-                <label class="text-sm font-medium text-gray-600 block mb-2">Nhập ZaloNext ID (VD: 00001, 00002...)</label>
+                <label class="text-sm font-medium text-gray-600 block mb-2">Nhập ID (VD: 00001) hoặc Tên người dùng</label>
                 <div class="flex space-x-2">
-                    <input type="number" id="search-friend-input" placeholder="Nhập 5 chữ số ID" class="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zalo outline-none">
-                    <button onclick="searchUserOnCloud()" class="bg-zalo text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md">Tìm</button>
+                    <input type="text" id="search-friend-input" placeholder="Nhập ID hoặc tên cần tìm..." class="flex-1 bg-gray-100 border-none rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-zalo outline-none">
+                    <button onclick="searchUserUnified()" class="bg-zalo text-white px-5 py-3 rounded-xl text-sm font-bold shadow-md">Tìm kiếm</button>
                 </div>
             </div>
-            <div id="search-result-area" class="min-h-[120px] flex items-center justify-center bg-gray-50 rounded-xl p-4 border border-dashed border-gray-300">
-                <p class="text-sm text-gray-400 text-center">Nhập ID để tìm kiếm người dùng trên hệ thống Cloud</p>
+            <div id="search-result-area" class="min-h-[140px] max-h-[220px] overflow-y-auto flex flex-col justify-center bg-gray-50 rounded-xl p-3 border border-dashed border-gray-300">
+                <p class="text-sm text-gray-400 text-center">Kết quả tìm kiếm sẽ hiển thị ở đây</p>
             </div>
         </div>
     </div>
@@ -109,19 +111,13 @@
                 <div class="relative mb-3">
                     <img id="edit-preview-avatar" src="" class="w-24 h-24 rounded-full object-cover border-2 border-gray-200 shadow-md bg-gray-200">
                 </div>
-                <div class="flex space-x-2">
-                    <button type="button" onclick="setDefaultAvatar()" class="bg-gray-100 text-gray-700 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1">
-                        <i data-lucide="user-round" class="w-4 h-4"></i><span>Ảnh mặc định</span>
-                    </button>
-                    <label class="bg-blue-50 text-zalo font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center space-x-1 cursor-pointer">
-                        <i data-lucide="image" class="w-4 h-4"></i><span>Chọn từ Album</span>
-                        <input type="file" id="upload-avatar-file" accept="image/*" class="hidden" onchange="previewFileAvatar(event)">
-                    </label>
-                </div>
+                <button type="button" onclick="setDefaultAvatar()" class="bg-gray-100 text-gray-700 font-semibold px-4 py-2 rounded-xl text-xs flex items-center space-x-1">
+                    <i data-lucide="user-round" class="w-4 h-4"></i><span>Đặt lại ảnh mặc định</span>
+                </button>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="text-sm font-medium text-gray-600">Tên hiển thị</label>
+                    <label class="text-sm font-medium text-gray-600">Tên hiển thị (Bắt buộc)</label>
                     <input type="text" id="edit-name-input" class="w-full bg-gray-100 border-none rounded-xl px-4 py-3 text-sm mt-1 outline-none">
                 </div>
                 <div>
@@ -137,43 +133,24 @@
                     <textarea id="edit-bio-input" maxlength="80" rows="2" class="w-full bg-gray-100 border-none rounded-xl px-4 py-3 text-sm mt-1 outline-none resize-none"></textarea>
                 </div>
             </div>
-            <button onclick="saveProfileToCloud()" class="w-full bg-zalo text-white py-3.5 rounded-xl font-bold text-base shadow-md active:scale-95 transition">Lưu thay đổi</button>
+            <button onclick="saveProfile()" class="w-full bg-zalo text-white py-3.5 rounded-xl font-bold text-base shadow-md active:scale-95 transition">Lưu thay đổi</button>
         </div>
     </div>
 
-    <!-- FIREBASE SDK & APP LOGIC -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, getDocs, updateDoc, query, where, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        // Cấu hình Firebase miễn phí (Public Test Project)
-        const firebaseConfig = {
-            apiKey: "AIzaSyD-TestKeyForZaloNextDemoOnly12345",
-            authDomain: "zalonext-demo.firebaseapp.com",
-            projectId: "zalonext-demo",
-            storageBucket: "zalonext-demo.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef"
-        };
-
-        // Lưu ý: Nếu bạn muốn database riêng của bạn không bị dùng chung với người khác, 
-        // hãy tạo 1 project miễn phí tại https://console.firebase.google.com/ và thay config của bạn vào đây.
-
-        // Vì môi trường demo đơn giản, ta sẽ fallback sang LocalStorage thông minh hoặc kết nối Cloud mô phỏng chuẩn xác:
-        // ĐỂ CHẠY THẬT ĐA THIẾT BỊ NGAY LẬP TỨC KHÔNG CẦN CẤU HÌNH, TA SỬ DỤNG DỊCH VỤ CLOUD JSON MOCK HOẶC FIREBASE TEST:
-        
-        // (Để đơn giản và chạy ngay lập tức không lỗi cấu hình apiKey, ta dùng Cloud Firestore công khai hoặc chuyển sang API Serverless nhẹ). 
-        // Hoặc bạn có thể dùng Firebase thực tế bằng cách tạo project trên console.firebase.google.com.
-    </script>
-
+    <!-- APP LOGIC SCRIPT -->
     <script>
-        // Avatar chuẩn mẫu TikTok
         const DEFAULT_AVATAR = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23E5E7EB'/%3E%3Ccircle cx='50' cy='38' r='20' fill='%23FFFFFF'/%3E%3Cpath d='M15 88 C15 65 30 58 50 58 C70 58 85 65 85 88 Z' fill='%23FFFFFF'/%3E%3C/svg%3E";
 
-        // Sử dụng LocalStorage có cơ chế đồng bộ giả lập Server hoặc bạn có thể thay bằng Firebase thực tế
         let currentUser = JSON.parse(localStorage.getItem('zn_current_user')) || null;
         let registeringGender = "Nam";
         let tempAvatarData = "";
+
+        // Lắng nghe đồng bộ đa tab
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'zn_cloud_users') {
+                showToast('🔄 Dữ liệu hệ thống vừa được cập nhật!');
+            }
+        });
 
         function showToast(msg) {
             const t = document.getElementById('toast');
@@ -196,21 +173,21 @@
             const c = document.getElementById('app-container');
             c.innerHTML = `
                 <div class="flex-1 flex flex-col justify-between p-6 bg-gradient-to-b from-blue-600 to-zalo text-white text-center">
-                    <div class="pt-10">
+                    <div class="pt-12">
                         <div class="w-20 h-20 bg-white rounded-3xl mx-auto flex items-center justify-center shadow-xl mb-4">
                             <i data-lucide="zap" class="w-10 h-10 text-zalo fill-zalo"></i>
                         </div>
-                        <h1 class="text-3xl font-black tracking-wide">ZaloNext Cloud</h1>
-                        <p class="text-blue-100 text-sm mt-1">Hệ thống ID trực tuyến đa thiết bị</p>
+                        <h1 class="text-3xl font-black tracking-wide">ZaloNext Pro</h1>
+                        <p class="text-blue-100 text-sm mt-1">Kết nối bạn bè qua ID và Tên trực tuyến</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 text-left space-y-3 shadow-inner">
                         <div class="flex items-start space-x-3">
-                            <div class="bg-white/20 p-2 rounded-xl mt-0.5"><i data-lucide="cloud-cog" class="w-5 h-5"></i></div>
-                            <div><h4 class="font-bold text-sm">Đồng bộ Cloud Server</h4><p class="text-xs text-blue-100">ID tự động tăng tuần tự (00001, 00002...) không bị trùng lặp giữa các máy.</p></div>
+                            <div class="bg-white/20 p-2 rounded-xl mt-0.5"><i data-lucide="shield-check" class="w-5 h-5"></i></div>
+                            <div><h4 class="font-bold text-sm">Bảo mật & Cấp ID tự động</h4><p class="text-xs text-blue-100">Hệ thống kiểm tra tên hợp lệ và cấp ID không trùng lặp.</p></div>
                         </div>
                     </div>
                     <button onclick="renderRegisterScreen()" class="w-full bg-white text-zalo font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition text-base">
-                        Tạo tài khoản trực tuyến 🚀
+                        Đăng ký tài khoản ngay ✨
                     </button>
                 </div>
             `;
@@ -224,13 +201,13 @@
                 <div class="flex-1 flex flex-col justify-between p-6 bg-white overflow-y-auto hide-scrollbar">
                     <div class="pt-2">
                         <button onclick="renderWelcomeScreen()" class="p-2 bg-gray-100 rounded-full mb-4"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-700"></i></button>
-                        <h2 class="text-2xl font-black text-gray-900">Đăng ký tài khoản Cloud</h2>
-                        <p class="text-sm text-gray-500 mt-1">Hệ thống sẽ cấp ID trực tuyến độc nhất cho bạn.</p>
+                        <h2 class="text-2xl font-black text-gray-900">Tạo tài khoản mới</h2>
+                        <p class="text-sm text-gray-500 mt-1">Vui lòng nhập tên hiển thị để hệ thống cấp ID.</p>
                     </div>
                     <div class="space-y-4 my-auto py-4">
                         <div>
-                            <label class="text-sm font-semibold text-gray-700 block mb-2">Tên hiển thị</label>
-                            <input type="text" id="reg-name" placeholder="VD: Hoàng Anh..." class="w-full bg-gray-100 border-none rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-zalo">
+                            <label class="text-sm font-semibold text-gray-700 block mb-2">Tên hiển thị <span class="text-red-500">* (Bắt buộc)</span></label>
+                            <input type="text" id="reg-name" placeholder="VD: Nguyễn Văn A..." class="w-full bg-gray-100 border-none rounded-2xl px-4 py-3.5 text-sm outline-none focus:ring-2 focus:ring-zalo">
                         </div>
                         <div>
                             <label class="text-sm font-semibold text-gray-700 block mb-2">Chọn giới tính</label>
@@ -241,8 +218,8 @@
                             </div>
                         </div>
                     </div>
-                    <button onclick="registerUserCloud()" class="w-full bg-zalo text-white py-4 rounded-2xl font-bold text-base shadow-md active:scale-95 transition shrink-0">
-                        Hoàn tất đăng ký ✨
+                    <button onclick="registerUser()" class="w-full bg-zalo text-white py-4 rounded-2xl font-bold text-base shadow-md active:scale-95 transition shrink-0">
+                        Hoàn tất đăng ký 🚀
                     </button>
                 </div>
             `;
@@ -253,21 +230,24 @@
             registeringGender = g;
             ['Nam', 'Nữ', 'Khác'].forEach(item => {
                 let btn = document.getElementById(`btn-gender-${item}`);
-                if (item === g) {
-                    btn.className = "py-3 rounded-2xl border-2 border-zalo bg-blue-50 text-zalo font-bold text-sm transition";
-                } else {
-                    btn.className = "py-3 rounded-2xl border-2 border-transparent bg-gray-100 text-gray-600 font-semibold text-sm transition";
+                if (btn) {
+                    btn.className = item === g 
+                        ? "py-3 rounded-2xl border-2 border-zalo bg-blue-50 text-zalo font-bold text-sm transition" 
+                        : "py-3 rounded-2xl border-2 border-transparent bg-gray-100 text-gray-600 font-semibold text-sm transition";
                 }
             });
         }
 
-        function registerUserCloud() {
+        function registerUser() {
             let nameInput = document.getElementById('reg-name').value.trim();
-            if(!nameInput) { showToast('Vui lòng nhập tên của bạn!'); return; }
+            if(!nameInput) { 
+                showToast('❌ Vui lòng nhập tên hiển thị để đăng ký!'); 
+                document.getElementById('reg-name').focus();
+                return; 
+            }
 
-            // Lấy danh sách user toàn cục trên Cloud (hoặc localStorage chung nếu chạy giả lập server)
             let allUsers = JSON.parse(localStorage.getItem('zn_cloud_users')) || [
-                { id: "00001", name: "ZaloNext Bot", avatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80", gender: "Khác", bio: "Bot hỗ trợ hệ thống", online: true }
+                { id: "00001", name: "ZaloNext Bot", avatar: DEFAULT_AVATAR, gender: "Khác", bio: "Bot hỗ trợ hệ thống tự động", online: true }
             ];
 
             let nextIdNum = allUsers.length + 1;
@@ -286,7 +266,7 @@
             localStorage.setItem('zn_cloud_users', JSON.stringify(allUsers));
             localStorage.setItem('zn_current_user', JSON.stringify(currentUser));
 
-            showToast(`Đăng ký thành công! ID: #${newId}`);
+            showToast(`🎉 Đăng ký thành công! ID của bạn: #${newId}`);
             switchTab('messages');
         }
 
@@ -311,14 +291,17 @@
             let chats = JSON.parse(localStorage.getItem(`zn_chats_${currentUser.id}`)) || [];
             container.innerHTML = `
                 <div class="bg-zalo text-white px-4 py-3 flex items-center justify-between shrink-0 shadow-sm">
-                    <h2 class="font-bold text-lg">Tin nhắn (ID: #${currentUser.id})</h2>
-                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full active:bg-white/20"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
+                    <div>
+                        <h2 class="font-bold text-lg leading-tight">Tin nhắn</h2>
+                        <span class="text-xs text-blue-100">ID của bạn: #${currentUser.id}</span>
+                    </div>
+                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full bg-white/10 active:bg-white/25"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
                 </div>
                 <div class="flex-1 overflow-y-auto hide-scrollbar bg-white divide-y divide-gray-100">
                     ${chats.length === 0 ? `
                         <div class="flex flex-col items-center justify-center h-full p-6 text-center text-gray-400">
                             <i data-lucide="message-square-off" class="w-12 h-12 mb-2 stroke-1"></i>
-                            <p class="text-sm">Chưa có cuộc trò chuyện.<br>Bấm nút góc phải để tìm bạn bằng ID 5 số nhé!</p>
+                            <p class="text-sm">Chưa có cuộc trò chuyện nào.<br>Bấm nút góc phải để tìm bạn bằng ID hoặc Tên nhé!</p>
                         </div>
                     ` : chats.map(c => `
                         <div onclick="openChat('${c.userId}')" class="flex items-center p-4 active:bg-gray-100 transition cursor-pointer">
@@ -338,46 +321,114 @@
             let targetUser = allUsers.find(u => u.id === targetId);
             if(!targetUser) return;
 
+            let chatKey = `zn_chat_history_${[currentUser.id, targetUser.id].sort().join('_')}`;
+            let messages = JSON.parse(localStorage.getItem(chatKey)) || [
+                { sender: targetUser.id, text: `Xin chào ${currentUser.name}! Rất vui được kết nối với bạn qua hệ thống ZaloNext.` }
+            ];
+
             document.getElementById('bottom-bar').classList.add('hidden');
             const container = document.getElementById('app-container');
             container.innerHTML = `
-                <div class="bg-zalo text-white px-2 py-3 flex items-center shadow-md shrink-0">
-                    <button onclick="switchTab('messages')" class="p-2 active:bg-white/20 rounded-full"><i data-lucide="chevron-left" class="w-7 h-7"></i></button>
-                    <img src="${targetUser.avatar || DEFAULT_AVATAR}" class="w-10 h-10 rounded-full object-cover border border-white/30 ml-1 bg-gray-200">
-                    <div class="ml-3">
-                        <h4 class="text-base font-bold leading-none">${targetUser.name}</h4>
-                        <span class="text-xs text-white/80 block mt-1">ID: ${targetUser.id}</span>
-                    </div>
-                </div>
-                <div id="chat-body" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4 bg-[#E2E8F0]">
-                    <!-- Tin nhắn mẫu -->
-                    <div class="flex justify-start">
-                        <div class="max-w-[75%] px-4 py-2.5 text-sm bg-white text-gray-900 rounded-2xl shadow-sm">
-                            <p>Xin chào! Chúng ta đã kết nối thành công qua hệ thống Cloud ID #${targetUser.id}.</p>
+                <div class="bg-zalo text-white px-2 py-3 flex items-center justify-between shadow-md shrink-0">
+                    <div class="flex items-center">
+                        <button onclick="switchTab('messages')" class="p-2 active:bg-white/20 rounded-full"><i data-lucide="chevron-left" class="w-7 h-7"></i></button>
+                        <img src="${targetUser.avatar || DEFAULT_AVATAR}" class="w-10 h-10 rounded-full object-cover border border-white/30 ml-1 bg-gray-200">
+                        <div class="ml-3">
+                            <h4 class="text-base font-bold leading-none">${targetUser.name}</h4>
+                            <span class="text-xs text-white/80 block mt-1">ID: ${targetUser.id}</span>
                         </div>
                     </div>
+                    <div class="flex items-center space-x-1">
+                        <button onclick="sendDiceRoll('${targetUser.id}')" title="Tung xúc xắc" class="p-2 active:bg-white/20 rounded-full"><i data-lucide="dice-5" class="w-6 h-6"></i></button>
+                        <button onclick="sendHeartEffect('${targetUser.id}')" title="Thả tim" class="p-2 active:bg-white/20 rounded-full text-pink-300"><i data-lucide="heart" class="w-6 h-6 fill-current"></i></button>
+                    </div>
                 </div>
-                <div class="bg-white p-3 flex items-center space-x-3 shrink-0 pb-safe">
-                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-zalo">
+                
+                <div id="chat-body" class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-3 bg-[#E2E8F0] relative">
+                    <div id="heart-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+                    ${messages.map(m => `
+                        <div class="flex ${m.sender === currentUser.id ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[75%] px-4 py-2.5 text-sm ${m.sender === currentUser.id ? 'bg-zalo text-white rounded-2xl rounded-tr-none' : 'bg-white text-gray-900 rounded-2xl rounded-tl-none'} shadow-sm">
+                                <p>${m.text}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+
+                <div class="bg-white p-3 flex items-center space-x-2 shrink-0 pb-safe">
+                    <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="flex-1 bg-gray-100 rounded-full px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-zalo" onkeypress="if(event.key==='Enter') sendMsg('${targetUser.id}')">
                     <button onclick="sendMsg('${targetUser.id}')" class="bg-zalo text-white p-2.5 rounded-full active:scale-90"><i data-lucide="send" class="w-5 h-5"></i></button>
                 </div>
             `;
-            setTimeout(() => lucide.createIcons(), 10);
+            setTimeout(() => {
+                lucide.createIcons();
+                let b = document.getElementById('chat-body');
+                b.scrollTop = b.scrollHeight;
+            }, 10);
         }
 
         function sendMsg(targetId) {
             let inp = document.getElementById('chat-input');
-            if(!inp.value.trim()) return;
-            let body = document.getElementById('chat-body');
-            body.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="max-w-[75%] px-4 py-2.5 text-sm bg-zalo text-white rounded-2xl shadow-sm">
-                        <p>${inp.value.trim()}</p>
-                    </div>
-                </div>
-            `;
+            let txt = inp.value.trim();
+            if(!txt) return;
+
+            let chatKey = `zn_chat_history_${[currentUser.id, targetId].sort().join('_')}`;
+            let messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+            
+            messages.push({ sender: currentUser.id, text: txt });
+            localStorage.setItem(chatKey, JSON.stringify(messages));
+
+            // Cập nhật danh sách chat gần đây cho cả 2
+            updateRecentChat(currentUser.id, targetId, txt);
+            updateRecentChat(targetId, currentUser.id, txt);
+
             inp.value = "";
-            body.scrollTop = body.scrollHeight;
+            openChat(targetId);
+        }
+
+        function sendDiceRoll(targetId) {
+            let diceVal = Math.floor(Math.random() * 6) + 1;
+            let diceText = `🎲 Đã tung xúc xắc ra mặt: [ ${diceVal} điểm ]`;
+            
+            let chatKey = `zn_chat_history_${[currentUser.id, targetId].sort().join('_')}`;
+            let messages = JSON.parse(localStorage.getItem(chatKey)) || [];
+            messages.push({ sender: currentUser.id, text: diceText });
+            localStorage.setItem(chatKey, JSON.stringify(messages));
+
+            updateRecentChat(currentUser.id, targetId, diceText);
+            updateRecentChat(targetId, currentUser.id, diceText);
+            openChat(targetId);
+            showToast(`Bạn quay được ${diceVal} điểm!`);
+        }
+
+        function sendHeartEffect(targetId) {
+            let container = document.getElementById('heart-container');
+            if(container) {
+                let heart = document.createElement('div');
+                heart.innerHTML = '❤️';
+                heart.className = 'floating-heart text-2xl left-1/2 bottom-4';
+                heart.style.left = Math.random() * 80 + 10 + '%';
+                container.appendChild(heart);
+                setTimeout(() => heart.remove(), 1500);
+            }
+            sendMsg(targetId, "❤️ Đã gửi một trái tim yêu thương!");
+        }
+
+        function updateRecentChat(ownerId, peerId, lastMsg) {
+            let allUsers = JSON.parse(localStorage.getItem('zn_cloud_users')) || [];
+            let peer = allUsers.find(u => u.id === peerId);
+            if(!peer) return;
+
+            let chatsKey = `zn_chats_${ownerId}`;
+            let chats = JSON.parse(localStorage.getItem(chatsKey)) || [];
+            let idx = chats.findIndex(c => c.userId === peerId);
+            
+            let chatItem = { userId: peer.id, name: peer.name, avatar: peer.avatar, lastMsg: lastMsg };
+            if(idx !== -1) {
+                chats.splice(idx, 1);
+            }
+            chats.unshift(chatItem);
+            localStorage.setItem(chatsKey, JSON.stringify(chats));
         }
 
         function renderContacts(container) {
@@ -386,15 +437,17 @@
             container.innerHTML = `
                 <div class="bg-zalo text-white px-4 py-3 flex items-center justify-between shrink-0">
                     <h2 class="font-bold text-lg">Danh bạ hệ thống</h2>
-                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full active:bg-white/20"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
+                    <button onclick="toggleAddFriendModal(true)" class="p-2 rounded-full bg-white/10 active:bg-white/25"><i data-lucide="user-plus" class="w-6 h-6"></i></button>
                 </div>
                 <div class="flex-1 overflow-y-auto hide-scrollbar bg-white divide-y divide-gray-100">
-                    ${otherUsers.map(u => `
+                    ${otherUsers.length === 0 ? `
+                        <div class="text-center py-10 text-gray-400 text-sm">Chưa có người dùng nào khác trong hệ thống.</div>
+                    ` : otherUsers.map(u => `
                         <div class="flex items-center px-4 py-3 active:bg-gray-50">
                             <img src="${u.avatar || DEFAULT_AVATAR}" class="w-12 h-12 rounded-full object-cover mr-4 bg-gray-200">
                             <div class="flex-1">
                                 <h4 class="text-base font-bold text-gray-900">${u.name}</h4>
-                                <p class="text-xs text-gray-400">ID: ${u.id} • ${u.gender || 'Nam'}</p>
+                                <p class="text-xs text-gray-400">ID: #${u.id} • ${u.gender || 'Nam'}</p>
                             </div>
                             <button onclick="openChat('${u.id}')" class="p-2 text-zalo bg-blue-50 rounded-full"><i data-lucide="message-circle" class="w-5 h-5"></i></button>
                         </div>
@@ -406,10 +459,19 @@
         function renderFeed(container) {
             container.innerHTML = `
                 <div class="bg-zalo text-white px-4 py-3 flex justify-between shrink-0">
-                    <h2 class="font-bold text-lg">Bảng tin</h2>
+                    <h2 class="font-bold text-lg">Bảng tin cộng đồng</h2>
                 </div>
-                <div class="flex-1 overflow-y-auto hide-scrollbar bg-gray-100 p-4 text-center text-gray-400">
-                    <p class="text-sm mt-10">Bảng tin cộng đồng đang cập nhật...</p>
+                <div class="flex-1 overflow-y-auto hide-scrollbar bg-gray-100 p-4 space-y-3">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm space-y-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 bg-zalo text-white rounded-full flex items-center font-bold justify-center">Z</div>
+                            <div>
+                                <h4 class="font-bold text-sm">Hệ thống ZaloNext</h4>
+                                <p class="text-[10px] text-gray-400">Vừa xong</p>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-700">Chào mừng bạn đến với phiên bản nâng cấp! Giờ đây bạn có thể tìm kiếm bạn bè bằng cả ID hoặc Tên, chơi tung xúc xắc và thả tim trong phòng chat.</p>
+                    </div>
                 </div>
             `;
         }
@@ -423,7 +485,7 @@
                     <div class="bg-white p-6 text-center shadow-sm">
                         <img src="${currentUser.avatar || DEFAULT_AVATAR}" class="w-24 h-24 rounded-full object-cover border-4 border-gray-100 mx-auto mb-3 bg-gray-200">
                         <h3 class="text-xl font-bold text-gray-900">${currentUser.name}</h3>
-                        <p class="text-sm font-semibold text-zalo mt-1">ID: ${currentUser.id} <span class="text-gray-400 font-normal">• ${currentUser.gender}</span></p>
+                        <p class="text-sm font-semibold text-zalo mt-1">ID: #${currentUser.id} <span class="text-gray-400 font-normal">• ${currentUser.gender}</span></p>
                         <p class="text-sm text-gray-500 mt-2">${currentUser.bio}</p>
                         <button onclick="toggleEditModal(true)" class="mt-4 bg-gray-100 text-gray-800 font-bold px-6 py-2 rounded-full text-sm">Chỉnh sửa hồ sơ</button>
                     </div>
@@ -451,22 +513,38 @@
             }
         }
 
-        function searchUserOnCloud() {
-            let v = document.getElementById('search-friend-input').value.trim();
-            if(!v) return;
-            v = /^\d+$/.test(v) ? String(v).padStart(5, '0') : v;
-            let allUsers = JSON.parse(localStorage.getItem('zn_cloud_users')) || [];
-            let f = allUsers.find(u => u.id === v);
+        function searchUserUnified() {
+            let queryText = document.getElementById('search-friend-input').value.trim().toLowerCase();
             let r = document.getElementById('search-result-area');
-            if(f && f.id !== currentUser.id) {
-                r.innerHTML = `
-                    <div class="flex items-center w-full bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+            if(!queryText) {
+                r.innerHTML = `<p class="text-red-500 font-bold text-sm text-center">Vui lòng nhập ID hoặc tên cần tìm!</p>`;
+                return;
+            }
+
+            let allUsers = JSON.parse(localStorage.getItem('zn_cloud_users')) || [];
+            let searchIdPadded = queryText.padStart(5, '0');
+
+            // Tìm kiếm khớp ID chính xác HOẶC tên chứa từ khóa
+            let matched = allUsers.filter(u => {
+                if(u.id === currentUser.id) return false;
+                let matchId = u.id === queryText || u.id === searchIdPadded;
+                let matchName = u.name.toLowerCase().includes(queryText);
+                return matchId || matchName;
+            });
+
+            if(matched.length > 0) {
+                r.innerHTML = matched.map(f => `
+                    <div class="flex items-center w-full bg-white p-3 rounded-xl border border-gray-100 shadow-sm mb-2">
                         <img src="${f.avatar || DEFAULT_AVATAR}" class="w-12 h-12 rounded-full mr-3 object-cover bg-gray-200">
-                        <div class="flex-1 text-left"><h4 class="font-bold text-sm text-gray-900">${f.name}</h4><p class="text-xs text-zalo font-bold">ID: ${f.id}</p></div>
+                        <div class="flex-1 text-left">
+                            <h4 class="font-bold text-sm text-gray-900">${f.name}</h4>
+                            <p class="text-xs text-zalo font-bold">ID: #${f.id} • ${f.gender || 'Nam'}</p>
+                        </div>
                         <button onclick="toggleAddFriendModal(false); openChat('${f.id}');" class="bg-zalo text-white px-3 py-1.5 rounded-lg text-xs font-bold">Nhắn tin</button>
-                    </div>`;
+                    </div>
+                `).join('');
             } else {
-                r.innerHTML = `<p class="text-red-500 font-bold text-sm">Không tìm thấy ID #${v} trên hệ thống!</p>`;
+                r.innerHTML = `<p class="text-red-500 font-bold text-sm text-center">Không tìm thấy người dùng nào với từ khóa "${queryText}"!</p>`;
             }
         }
 
@@ -490,24 +568,17 @@
         function setDefaultAvatar() {
             tempAvatarData = DEFAULT_AVATAR;
             document.getElementById('edit-preview-avatar').src = DEFAULT_AVATAR;
-            showToast('Đã chọn ảnh mặc định chuẩn');
+            showToast('Đã đặt lại ảnh mặc định');
         }
 
-        function previewFileAvatar(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    tempAvatarData = e.target.result;
-                    document.getElementById('edit-preview-avatar').src = tempAvatarData;
-                    showToast('Đã chọn ảnh từ album');
-                }
-                reader.readAsDataURL(file);
+        function saveProfile() {
+            let newName = document.getElementById('edit-name-input').value.trim();
+            if(!newName) {
+                showToast('❌ Tên không được để trống!');
+                return;
             }
-        }
 
-        function saveProfileToCloud() {
-            currentUser.name = document.getElementById('edit-name-input').value || currentUser.name;
+            currentUser.name = newName;
             currentUser.gender = document.getElementById('edit-gender-input').value;
             currentUser.bio = document.getElementById('edit-bio-input').value;
             currentUser.avatar = tempAvatarData;
@@ -524,4 +595,4 @@
         }
     </script>
 </body>
-</html>
+</html>"ă
